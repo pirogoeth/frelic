@@ -1,0 +1,8 @@
+# Python bytecode
+*.egg
+*.egg-info
+*.pyc
+
+# C compiled objects
+hacking/test
+hacking/sockmon.so

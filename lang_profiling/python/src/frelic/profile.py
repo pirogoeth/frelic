@@ -11,7 +11,10 @@ _funcs_prof = {}
 _profile = []
 _code_cache = {}
 
-NO_TRACE = [
+BLACKLIST = 0x1
+WHITELIST = 0x2
+
+NO_TRACE = set({
     'Cookie',
     'UserDict',
     '_weakrefset',
@@ -45,9 +48,27 @@ NO_TRACE = [
     'threading',
     'warnings',
     'wrapt',
-]
+})
 
 func_prof_res = collections.namedtuple('ProfileRes', 'code_obj function exec_time')
+
+_TRACE_LIMIT = BLACKLIST
+_ONLY_TRACE = set({})
+
+def add_trace(modname):
+    """ Adds a module to the trace whitelist set.
+        Since the user is attempting to add a module name to trace, also enable
+        the WHITELIST trace limit.
+    """
+
+    global _TRACE_LIMIT
+    global _ONLY_TRACE
+
+    if _TRACE_LIMIT is not WHITELIST:
+        _TRACE_LIMIT = WHITELIST
+
+    _ONLY_TRACE.add(modname)
+
 
 def _generic_trace(frame, event, arg):
 
@@ -72,8 +93,12 @@ def _generic_trace(frame, event, arg):
                 frame.f_code.co_filename: src_module
             })
 
-        if src_module in NO_TRACE:
-            return
+        if _TRACE_LIMIT is BLACKLIST:
+            if src_module in NO_TRACE:
+                return
+        elif _TRACE_LIMIT is WHITELIST:
+            if src_module not in _ONLY_TRACE:
+                return
     except:
         # Could not get module :(
         return
@@ -110,12 +135,23 @@ def build_profiling_info():
                 uniq: {
                     'function': tup.function,
                     'filename': tup.code_obj.co_filename,
-                    'lineno': tup.code_obj.co_lineno,
+                    'lineno': tup.code_obj.co_firstlineno,
                     'times': [],
                 },
             })
 
         _funcs.get(uniq).get('times').append(tup.exec_time)
+
+    for uniq, data in _funcs.items():
+        stats = {
+            'total': sum(data.get('times')),
+            'max': max(data.get('times')),
+            'min': min(data.get('times')),
+            'avg': sum(data.get('times')) / len(data.get('times')),
+        }
+        data.update({
+            'stats': stats
+        })
 
     return _funcs
 
@@ -163,3 +199,13 @@ def install_profiler(install_atexit=False):
 
     sys.settrace(_generic_trace)
 
+
+def remove_profiler(remove_atexit=False):
+
+    if remove_atexit:
+        import atexit
+        # This is a hack but okay :(
+        if print_profiling_info in atexit._exithandlers:
+            atexit._exithandlers.remove(print_profiling_info)
+
+    sys.settrace(None)
