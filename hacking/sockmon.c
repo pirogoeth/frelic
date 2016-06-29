@@ -5,8 +5,8 @@
 ssize_t write(int fd, const void *buf, size_t count) {
     // Check if we've gotten a copy of the write() syscall. If not,
     // use dlsym() to grab it.
-    if (_real_write == NULL) {
-        _real_write = dlsym(RTLD_NEXT, "write");
+    if (_libc_write == NULL) {
+        _libc_write = dlsym(RTLD_NEXT, "write");
     }
 
     printf(
@@ -15,14 +15,14 @@ ssize_t write(int fd, const void *buf, size_t count) {
             (unsigned char *) buf
     );
 
-    return _real_write(fd, buf, count);
+    return _libc_write(fd, buf, count);
 }
 
 ssize_t read(int fd, const void *buf, size_t count) {
     // Check if we've gotten a copy of the read() syscall. If not,
     // use dlsym() to grab it.
-    if (_real_read == NULL) {
-        _real_read = dlsym(RTLD_NEXT, "read");
+    if (_libc_read == NULL) {
+        _libc_read = dlsym(RTLD_NEXT, "read");
     }
 
     printf(
@@ -31,7 +31,7 @@ ssize_t read(int fd, const void *buf, size_t count) {
             count
     );
 
-    int rc = _real_read(fd, buf, count);
+    int rc = _libc_read(fd, buf, count);
     if (rc == -1) {
         printf(
                 " = %d, %s\n",

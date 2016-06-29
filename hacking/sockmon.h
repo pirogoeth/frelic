@@ -11,8 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static ssize_t (*_real_write)(int fd, const void *buf, size_t count) = NULL;
-static ssize_t (*_real_read)(int fd, const void *buf, size_t count) = NULL;
+static ssize_t (*_libc_write)(int fd, const void *buf, size_t count) = NULL;
+static ssize_t (*_libc_read)(int fd, const void *buf, size_t count) = NULL;
 
 ssize_t write(int fd, const void *buf, size_t count);
 ssize_t read(int fd, const void *buf, size_t count);
